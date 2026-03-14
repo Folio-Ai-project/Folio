@@ -3,8 +3,8 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
-  const apiBase = env.VITE_API_BASE || "http://localhost:8000";
+  const env = loadEnv(mode, ".", "");
+  const apiBase = env.VITE_API_BASE || "http://15.165.0.170:8000";
 
   return {
     plugins: [
