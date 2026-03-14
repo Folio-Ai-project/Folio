@@ -6,7 +6,7 @@ import CIRCLE from "../../public/SVG/circle.svg";
 import SkillRadarChart from "../components/SkillRadarChart";
 import SkillBarChart from "../components/SkillBarChart";
 import type { SkillData } from "../components/SkillBarChart";
-import { API_BASE } from "../api";
+import { AUTH_API_BASE } from "../api";
 
 // ------------------ 더미 데이터(나머지는 나중에 AI DB로 교체) ------------------
 const jobFitData: SkillData[] = [
@@ -394,9 +394,16 @@ function Analysis() {
         setLoading(true);
         setErrMsg("");
 
-        const res = await fetch(`${API_BASE}/api/profile/me`, {
+        const res = await fetch(`${AUTH_API_BASE}/api/profile/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        // 인증 문제일 경우 토큰 삭제 후 로그인으로 이동
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
 
         const data = await res.json();
 
@@ -412,6 +419,7 @@ function Analysis() {
           stacks: data.stacks || [],
         });
       } catch (e) {
+        console.error("프로필 조회 실패:", e);
         setErrMsg("서버 연결 실패");
       } finally {
         setLoading(false);

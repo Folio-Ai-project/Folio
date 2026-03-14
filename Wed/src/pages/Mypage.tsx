@@ -1,7 +1,8 @@
-import { useEffect, useState  } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Card, Form, Button, Badge } from "react-bootstrap";
-import {MainDiv} from "./MainPage";
+import { MainDiv } from "./MainPage";
+import { AUTH_API_BASE } from "../api";
 
 type UserData = {
   name: string;
@@ -49,28 +50,58 @@ const StackGrid = styled.div`
   gap: 0.75em;
 `;
 
-const savedData:any = localStorage.getItem("myPageData");
-const parsedData:UserData = JSON.parse(savedData);
-
-
-
 function MyPage() {
-  useEffect(() => {
-    if (savedData) {
-      setName(parsedData.name || "");
-      setCareer(parsedData.career || "");
-      setPortfolioUrl(parsedData.portfolioUrl || "");
-      setStacks(parsedData.stacks || []);
-    }
-  }, []);
-
-  // 기본 정보
   const [name, setName] = useState("");
   const [career, setCareer] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
-
-  // 개발 스택
   const [stacks, setStacks] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch(`${AUTH_API_BASE}/api/profile/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data?.error || "프로필을 불러오지 못했습니다.");
+          return;
+        }
+
+        setName(data.name || "");
+        setCareer(data.career || "");
+        setPortfolioUrl(data.portfolioUrl || "");
+        setStacks(Array.isArray(data.stacks) ? data.stacks : []);
+      } catch (err) {
+        console.error("프로필 로드 실패:", err);
+        setError("서버 연결 실패");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const [saving, setSaving] = useState(false);
 
   const toggleStack = (stack: string) => {
     setStacks(prev =>
@@ -80,7 +111,13 @@ function MyPage() {
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
     const payload = {
       name,
       career,
@@ -88,12 +125,38 @@ function MyPage() {
       stacks,
     };
 
-    const payloadJson = JSON.stringify(payload);
-    localStorage.setItem("myPageData", payloadJson);
+    try {
+      setSaving(true);
+      setError(null);
 
-    console.log("저장 데이터", payload);
-    alert("내 정보가 저장되었습니다!");
+      const res = await fetch(`${AUTH_API_BASE}/api/profile/me`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data?.error || "저장에 실패했습니다.");
+        return;
+      }
+
+      alert("내 정보가 저장되었습니다!");
+    } catch (err) {
+      console.error("프로필 저장 실패:", err);
+      alert("서버 연결 실패");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -101,6 +164,12 @@ function MyPage() {
       <PageWrapper>
         <Card className="p-4 shadow-sm">
           <h4 className="mb-4">내 정보</h4>
+
+          {error && (
+            <div style={{ color: "#d60000", marginBottom: "1rem" }}>
+              {error}
+            </div>
+          )}
 
           {/* 이름 */}
           <Form.Group className="mb-3">
@@ -172,15 +241,15 @@ function MyPage() {
             <Button
               style={{ backgroundColor: "#46BEFF", border: "none" }}
               onClick={handleSave}
+              disabled={loading || saving}
             >
-              저장하기
+              {saving ? "저장중..." : "저장하기"}
             </Button>
           </div>
         </Card>
-      </PageWrapper>`
+      </PageWrapper>
     </MainDiv>
   );
 }
 
-export { MyPage, parsedData};
-
+export { MyPage };

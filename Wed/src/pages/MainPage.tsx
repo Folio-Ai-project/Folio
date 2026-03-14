@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../store";
+import { AI_API_BASE } from "../api";
 
 let MainDiv = styled.div<{ pt: number }>`
   position: relative;
@@ -227,8 +228,7 @@ function MainPage() {
     try {
       setIsUploading(true);
 
-      // ✅ Vite proxy 설정했으니 /api로 호출하면 됨
-      const res = await fetch("/api/analyze", {
+      const res = await fetch(`${AI_API_BASE}/api/analyze`, {
         method: "POST",
         body: formData,
       });
