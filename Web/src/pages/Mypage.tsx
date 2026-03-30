@@ -2,14 +2,6 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Card, Form, Button, Badge } from "react-bootstrap";
 import { MainDiv } from "./MainPage";
-import { AUTH_API_BASE } from "../api";
-
-type UserData = {
-  name: string;
-  career: string;
-  portfolioUrl: string;
-  stacks: string[];
-};
 
 const STACK_POOL = [
   "JavaScript",
@@ -70,7 +62,7 @@ function MyPage() {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`${AUTH_API_BASE}/api/profile/me`, {
+        const res = await fetch(`http://localhost:8000/api/profile/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -129,7 +121,7 @@ function MyPage() {
       setSaving(true);
       setError(null);
 
-      const res = await fetch(`${AUTH_API_BASE}/api/profile/me`, {
+      const res = await fetch(`http://localhost:8000/api/profile/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

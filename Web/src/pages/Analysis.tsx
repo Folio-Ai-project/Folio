@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import BAG from "../../public/SVG/BAG.svg";
-import URL from "../../public/SVG/URL.svg";
-import CIRCLE from "../../public/SVG/circle.svg";
+import BAG from "/SVG/BAG.svg?url";
+import URL from "/SVG/URL.svg?url";
+import CIRCLE from "/SVG/circle.svg?url";
 import SkillRadarChart from "../components/SkillRadarChart";
 import SkillBarChart from "../components/SkillBarChart";
 import type { SkillData } from "../components/SkillBarChart";
-import { AUTH_API_BASE } from "../api";
+import { useLocation } from "react-router-dom";
 
 // ------------------ 더미 데이터(나머지는 나중에 AI DB로 교체) ------------------
 const jobFitData: SkillData[] = [
@@ -46,12 +46,6 @@ const actionPlans = [
 ];
 
 // ------------------ 타입 ------------------
-type UserData = {
-  name: string;
-  career: string;
-  portfolioUrl: string;
-  stacks: string[];
-};
 
 // ------------------ 스타일(너 기존 코드 그대로) ------------------
 let AnalysisBgDiv = styled.div`
@@ -371,63 +365,38 @@ let DurationTag = styled.span`
 
 // ------------------ 컴포넌트 ------------------
 function Analysis() {
-  const [profile, setProfile] = useState<UserData>({
-    name: "",
-    career: "",
-    portfolioUrl: "",
-    stacks: [],
-  });
+  const location = useLocation();
+  const result = location.state?.result;
+  const structure = result?.structure;
+  const consulting = result?.consulting;
 
-  const [loading, setLoading] = useState(true);
-  const [errMsg, setErrMsg] = useState("");
+  const profile = {
+    name: structure?.career_summary ? "분석 완료" : "홍길동",
+    career: consulting?.overall_level ?? "-",
+    portfolioUrl: "-",
+    stacks: structure?.skills ?? [],
+  };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
+  const fitData: SkillData[] = (consulting?.market_fit_roles ?? jobFitData).map(
+    (r: { role: string; fit_score: number }) => ({ name: r.role, value: r.fit_score })
+  );
 
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
+  const skills = (consulting?.missing_skills ?? missingSkills).map(
+    (s: { name: string; priority: string }, i: number) => ({
+      id: i + 1,
+      name: s.name,
+      level: s.priority ?? s.level,
+    })
+  );
 
-    const load = async () => {
-      try {
-        setLoading(true);
-        setErrMsg("");
-
-        const res = await fetch(`${AUTH_API_BASE}/api/profile/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        // 인증 문제일 경우 토큰 삭제 후 로그인으로 이동
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setErrMsg(data?.error || "프로필 불러오기 실패");
-          return;
-        }
-
-        setProfile({
-          name: data.name || "",
-          career: data.career || "",
-          portfolioUrl: data.portfolioUrl || "",
-          stacks: data.stacks || [],
-        });
-      } catch (e) {
-        console.error("프로필 조회 실패:", e);
-        setErrMsg("서버 연결 실패");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, []);
+  const plans = (consulting?.improvement_actions ?? actionPlans).map(
+    (p: { title: string; description: string; duration: string }, i: number) => ({
+      id: i + 1,
+      title: p.title,
+      description: p.description,
+      duration: p.duration,
+    })
+  );
 
   return (
     <div>
@@ -435,40 +404,25 @@ function Analysis() {
         <AnalysisText>포트폴리오 분석 리포트</AnalysisText>
 
         <AnalysisDivList>
-          {/* ✅ 사용자 프로필(내 DB에서만 처리) */}
+          {/* AI 분석 결과 기반 프로필 */}
           <AnalysisDiv>
             <AnalysisTitle>사용자 프로필</AnalysisTitle>
-
-            {loading ? (
-              <div style={{ marginTop: "1em", color: "#666" }}>불러오는 중...</div>
-            ) : errMsg ? (
-              <div style={{ marginTop: "1em", color: "crimson" }}>{errMsg}</div>
+            <AnalysisName>{profile.name}</AnalysisName>
+            <AnalysisCareer>
+              <SVG src={BAG} alt="" /> 레벨: {profile.career}
+            </AnalysisCareer>
+            <AnalysisPortfolioUrl>
+              <SVG src={URL} alt="" /> {profile.portfolioUrl}
+            </AnalysisPortfolioUrl>
+            <AnalysisStacks>보유 기술 스킬</AnalysisStacks>
+            {profile.stacks.length > 0 ? (
+              <div className="mt-3">
+                {profile.stacks.map((stack) => (
+                  <Badge key={stack}>{stack}</Badge>
+                ))}
+              </div>
             ) : (
-              <>
-                <AnalysisName>{profile.name}</AnalysisName>
-
-                <AnalysisCareer>
-                  <SVG src={BAG} alt="" /> 경력 {profile.career || "-"}
-                </AnalysisCareer>
-
-                <AnalysisPortfolioUrl>
-                  <SVG src={URL} alt="" /> 포트폴리오 URL {profile.portfolioUrl || "-"}
-                </AnalysisPortfolioUrl>
-
-                <AnalysisStacks>보유 기술 스킬</AnalysisStacks>
-
-                {profile.stacks.length > 0 ? (
-                  <div className="mt-3">
-                    {profile.stacks.map((stack) => (
-                      <Badge key={stack}>{stack}</Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ marginTop: "0.75em", color: "#888" }}>
-                    아직 선택한 스택이 없어
-                  </div>
-                )}
-              </>
+              <div style={{ marginTop: "0.75em", color: "#888" }}>스킬 정보 없음</div>
             )}
           </AnalysisDiv>
 
@@ -486,8 +440,8 @@ function Analysis() {
           <AnalysisDiv>
             <AnalysisTitle>직무별 적합도</AnalysisTitle>
             <AnalysisTitleChart>AI 분석 기반 직무 매칭 점수</AnalysisTitleChart>
-            <SkillBarChart data={jobFitData} />
-            <BestJobDiv>최적 직무: </BestJobDiv>
+            <SkillBarChart data={fitData} />
+            <BestJobDiv>최적 직무: {fitData[0]?.name ?? "-"}</BestJobDiv>
           </AnalysisDiv>
         </AnalysisDivList>
       </AnalysisBgDiv>
@@ -526,7 +480,7 @@ function Analysis() {
             <AnalysisTitle>부족 스킬 분석</AnalysisTitle>
 
             <MissingSkillList>
-              {missingSkills.map((skill) => (
+              {skills.map((skill) => (
                 <MissingSkillItem key={skill.id}>
                   <SkillName>{skill.name}</SkillName>
                   <LevelBadge level={skill.level}>{skill.level}</LevelBadge>
@@ -543,7 +497,7 @@ function Analysis() {
             <AnalysisTitle>개선 액션 플랜</AnalysisTitle>
 
             <PlanList>
-              {actionPlans.map((plan, index) => (
+              {plans.map((plan, index) => (
                 <PlanItem key={plan.id}>
                   <PlanHeader>
                     <StepBadge>{index + 1}</StepBadge>

@@ -4,7 +4,6 @@ import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login as loginAction } from "../store";
-import { AUTH_API_BASE } from "../api";
 
 let LoginDiv = styled.div`
   width: 30em;
@@ -80,7 +79,7 @@ export function LoginPage() {
     e.preventDefault();
 
     try {
-      const res = await fetch(`${AUTH_API_BASE}/api/auth/login`, {
+      const res = await fetch(`http://localhost:8000/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

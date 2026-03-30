@@ -1,8 +1,6 @@
 import styled from "styled-components";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import type { RootState } from "../store";
 import { AI_API_BASE } from "../api";
 
 let MainDiv = styled.div<{ pt: number }>`
@@ -156,9 +154,6 @@ let MoreInfoText = styled.h6`
 `;
 
 function MainPage() {
-  const userState = useSelector((state: RootState) => state.user);
-  const isLoggedIn = Boolean(userState); // 너 store 구조에 맞춰서 true/false만 판단
-
   const navigate = useNavigate();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -208,21 +203,11 @@ function MainPage() {
     e.preventDefault();
     setErrorMsg(null);
 
-    // 로그인 체크
-    if (!isLoggedIn) {
-      alert("로그인이 필요한 서비스입니다.");
-      navigate("/login");
-      return;
-    }
-
-    // 중복 클릭 방지
     if (isUploading) return;
 
     const formData = new FormData();
-
     const prompt = textareaRef.current?.value?.trim();
     if (prompt) formData.append("prompt", prompt);
-
     files.forEach((file) => formData.append("files", file));
 
     try {
