@@ -1,5 +1,5 @@
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -11,15 +11,15 @@ lerna-debug.log*
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
 # Coverage
-coverage
+coverage/
 *.lcov
-.nyc_output
+.nyc_output/
 
 # Dependency directories
 node_modules/
@@ -29,32 +29,33 @@ jspm_packages/
 *.tsbuildinfo
 
 # Cache
-.npm
+.npm/
 .eslintcache
 .stylelintcache
-.cache
-.parcel-cache
+.cache/
+.parcel-cache/
 
 # Environment files
 .env
 .env.*
 !.env.example
+*.local
 
 # Build output
-dist
 dist/
-dist-ssr
+dist-ssr/
 dev-dist/
-.next
-out
-.nuxt
+.next/
+out/
+.nuxt/
 .svelte-kit/
+build/
 
-# Editor directories and files
+# Editor / OS files
 .vscode/*
 !.vscode/extensions.json
-.vscode-test
-.idea
+.vscode-test/
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
@@ -66,6 +67,8 @@ out
 *.tgz
 .yarn-integrity
 .pnp.*
+
+# Yarn
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
@@ -76,11 +79,8 @@ out
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-*.local
 
+# Python
 .venv/
 __pycache__/
 *.pyc
-node_modules/
-dist/
-.env
