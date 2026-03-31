@@ -13,7 +13,6 @@ ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg"}
 
 @contextmanager
 def temp_file(suffix: str, content: bytes):
-    """업로드 바이트를 임시 파일로 저장하고 경로를 yield한 뒤 자동 삭제."""
     tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -26,7 +25,6 @@ def temp_file(suffix: str, content: bytes):
 
 
 def parse_llm_json(raw: str) -> Dict[str, Any]:
-    """LLM 응답에서 JSON을 파싱합니다. 마크다운 코드블록도 처리합니다."""
     cleaned = raw.strip()
     if cleaned.startswith("```"):
         parts = cleaned.split("```")

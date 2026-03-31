@@ -1,4 +1,5 @@
 """Folygon AI Server 진입점"""
+'''실행법: uvicorn main:app --reload'''
 import logging
 import os
 
@@ -10,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv(os.path.join(os.path.dirname(__file__), "ai_server", "models", ".env"))
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 

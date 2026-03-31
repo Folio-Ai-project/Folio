@@ -61,9 +61,13 @@ def run_ocr(path: str, ext: str) -> List[Dict]:
     """파일 경로와 확장자를 받아 페이지별 토큰 리스트를 반환합니다."""
     ext = ext.lower().lstrip(".")
     if ext == "pdf":
-        return _ocr_pdf(path)
+        result = _ocr_pdf(path)
+        logger.info("PDF OCR 완료: %d 페이지, 총 %d 토큰", len(result), sum(len(p["tokens"]) for p in result))
+        return result
     if ext in {"png", "jpg", "jpeg"}:
-        return _ocr_image(path)
+        result = _ocr_image(path)
+        logger.info("이미지 OCR 완료: %d 토큰", len(result[0]["tokens"]))
+        return result
     raise ValueError(f"지원하지 않는 파일 형식: {ext}")
 
 
@@ -116,35 +120,80 @@ def extract_blocks(pages: List[Dict]) -> List[Dict]:
     blocks = []
     for page in pages:
         blocks.extend(_tokens_to_blocks(page.get("tokens", [])))
+    logger.info("레이아웃 완료: %d 블록", len(blocks))
     return blocks
 
 
 # ── LLM ───────────────────────────────────────────────
 
-_STRUCTURE_PROMPT = """You are a professional portfolio parser for Korean/English resumes.
-Extract structured data from the document. Return ONLY valid JSON.
+_STRUCTURE_PROMPT = """You are a professional portfolio parser specialized in Korean and English resumes.
+Extract structured data from the resume document below. Return ONLY valid JSON with no additional text, comments, or markdown.
 
+Guidelines:
+- For Korean resumes: normalize dates to "YYYY.MM ~ YYYY.MM" format (e.g., "2022년 3월" → "2022.03"). Translate field values to English where possible, but keep proper nouns (company names, school names, project names) in their original language.
+- If a field cannot be found, use null for strings and [] for arrays. Do not omit fields.
+- "technologies" should list only concrete tools, languages, or frameworks (e.g., "Python", "FastAPI", "AWS S3"). Do not include vague terms like "협업" or "커뮤니케이션".
+- "achievements" should be quantified outcomes where possible (e.g., "Reduced latency by 30%"). Extract verbatim if no metric is available.
+- "career_summary" should be 2–3 sentences summarizing the candidate's background, key skills, and career direction.
+
+Return this exact JSON structure:
 {
-  "projects": [{"name":"","description":"","role":"","technologies":[],"period":"","achievements":[]}],
-  "skills": [],
-  "education": [{"school":"","major":"","period":""}],
-  "career_summary": ""
+  "projects": [
+    {
+      "name": "Project name",
+      "description": "What the project does and its purpose",
+      "role": "Candidate's specific role (e.g., Backend Developer, ML Engineer)",
+      "technologies": ["tech1", "tech2"],
+      "period": "YYYY.MM ~ YYYY.MM",
+      "achievements": ["Quantified or concrete outcome"]
+    }
+  ],
+  "skills": ["Concrete skill or tool only"],
+  "education": [
+    {
+      "school": "Institution name",
+      "major": "Field of study",
+      "period": "YYYY.MM ~ YYYY.MM"
+    }
+  ],
+  "career_summary": "2–3 sentence summary of the candidate"
 }"""
 
 _CONSULTING_PROMPT = """You are a senior technical hiring manager in the Korean IT industry.
-Analyze the portfolio and give honest, actionable feedback in Korean. Return ONLY valid JSON.
+Analyze the portfolio and give honest, actionable feedback in Korean. Return ONLY valid JSON with no additional text, comments, or markdown.
 
+Rules:
+- All string values must be written in Korean, except for field keys and enum values.
+- "overall_level" must be exactly one of: "junior", "mid", "senior".
+- "growth_potential" must be exactly one of: "높음", "중간", "낮음".
+- "missing_skills[].priority" must be exactly one of: "높음", "중간", "낮음".
+- "market_fit_roles[].fit_score" must be an integer between 0 and 100.
+- "skill_radar" must contain EXACTLY 6 items. Each item represents a skill category you judge to be most relevant for this candidate based on the portfolio.
+  - "subject" must be a short Korean label (2–6 characters), e.g. "백엔드", "ML 모델링", "인프라", "데이터 분석".
+  - "value" must be an integer between 0 and 100, scored based on portfolio evidence.
+  - Choose categories that best differentiate this candidate. Do not use generic placeholders.
+- Do not omit any field. Use "" for missing strings and [] for missing arrays.
+
+Return this exact JSON structure:
 {
   "overall_level": "junior|mid|senior",
-  "level_reason": "",
-  "market_competitiveness": "",
+  "level_reason": "이 레벨로 판단한 근거",
+  "market_competitiveness": "현재 시장에서의 경쟁력 평가",
   "growth_potential": "높음|중간|낮음",
-  "strengths": [],
-  "weaknesses": [],
-  "missing_skills": [{"name":"","priority":"높음|중간|낮음"}],
-  "market_fit_roles": [{"role":"","fit_score":0}],
-  "improvement_actions": [{"title":"","description":"","duration":""}],
-  "project_feedback": [{"project_name":"","strength":"","improvement":""}]
+  "skill_radar": [
+    { "subject": "AI가 선정한 카테고리1", "value": 0 },
+    { "subject": "AI가 선정한 카테고리2", "value": 0 },
+    { "subject": "AI가 선정한 카테고리3", "value": 0 },
+    { "subject": "AI가 선정한 카테고리4", "value": 0 },
+    { "subject": "AI가 선정한 카테고리5", "value": 0 },
+    { "subject": "AI가 선정한 카테고리6", "value": 0 }
+  ],
+  "strengths": ["강점 항목"],
+  "weaknesses": ["약점 항목"],
+  "missing_skills": [{ "name": "기술명", "priority": "높음|중간|낮음" }],
+  "market_fit_roles": [{ "role": "직무명", "fit_score": 0 }],
+  "improvement_actions": [{ "title": "액션 제목", "description": "구체적인 설명", "duration": "예상 기간" }],
+  "project_feedback": [{ "project_name": "프로젝트명", "strength": "잘한 점", "improvement": "개선할 점" }]
 }"""
 
 
@@ -160,7 +209,9 @@ def llm_structure(blocks: List[Dict]) -> Dict:
         {"role": "system", "content": _STRUCTURE_PROMPT},
         {"role": "user", "content": _blocks_to_text(blocks)},
     ])
-    return parse_llm_json(raw)
+    result = parse_llm_json(raw)
+    logger.info("구조화 완료: 프로젝트 %d개, 스킬 %d개", len(result.get("projects", [])), len(result.get("skills", [])))
+    return result
 
 
 def llm_consult(structured: Dict) -> Optional[Dict]:
@@ -169,7 +220,9 @@ def llm_consult(structured: Dict) -> Optional[Dict]:
         {"role": "system", "content": _CONSULTING_PROMPT},
         {"role": "user", "content": json.dumps(structured, ensure_ascii=False)},
     ])
-    return parse_llm_json(raw)
+    result = parse_llm_json(raw)
+    logger.info("컨설팅 완료: 레벨=%s, 성장가능성=%s", result.get("overall_level"), result.get("growth_potential"))
+    return result
 
 
 # ── 전체 파이프라인 ────────────────────────────────────
@@ -177,9 +230,7 @@ def llm_consult(structured: Dict) -> Optional[Dict]:
 def run_pipeline(pages: List[Dict], mode: str = "full") -> Dict:
     """OCR 페이지 → 블록 → 구조화 → (컨설팅) 결과 반환"""
     blocks = extract_blocks(pages)
-    logger.debug("블록 수: %d", len(blocks))
-
     structured = llm_structure(blocks)
     consulting = llm_consult(structured) if mode == "full" else None
-
+    logger.info("파이프라인 완료: mode=%s", mode)
     return {"structure": structured, "consulting": consulting}

@@ -4,6 +4,7 @@ import BAG from "/SVG/BAG.svg?url";
 import URL from "/SVG/URL.svg?url";
 import CIRCLE from "/SVG/circle.svg?url";
 import SkillRadarChart from "../components/SkillRadarChart";
+import type { RadarData } from "../components/SkillRadarChart";
 import SkillBarChart from "../components/SkillBarChart";
 import type { SkillData } from "../components/SkillBarChart";
 import { useLocation } from "react-router-dom";
@@ -377,6 +378,8 @@ function Analysis() {
     stacks: structure?.skills ?? [],
   };
 
+  const radarData: RadarData[] = consulting?.skill_radar ?? [];
+
   const fitData: SkillData[] = (consulting?.market_fit_roles ?? jobFitData).map(
     (r: { role: string; fit_score: number }) => ({ name: r.role, value: r.fit_score })
   );
@@ -430,7 +433,7 @@ function Analysis() {
           <AnalysisDiv>
             <AnalysisTitle>기술 역량 분석</AnalysisTitle>
             <AnalysisTitleChart>분석 결과 기반 역량 시각화</AnalysisTitleChart>
-            <SkillRadarChart />
+            <SkillRadarChart data={radarData} />
             <Strength>
               <SVG src={CIRCLE} alt="circle" />
               강점: 프로그래밍 역량, 문제 해결 능력
