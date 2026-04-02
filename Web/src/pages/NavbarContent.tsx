@@ -1,8 +1,9 @@
 import Navbar from 'react-bootstrap/Navbar';
 import styled from 'styled-components';
 import { Link, useNavigate } from "react-router-dom"
-import { useSelector } from "react-redux"
+import { useSelector, useDispatch } from "react-redux"
 import type { RootState } from "../store"
+import { logout as logoutAction } from "../store"
 
 
 
@@ -26,12 +27,14 @@ let NavbarGrid = styled.div<NavbarGridProps>`
 
 function NavbarContent(){
   let navigator = useNavigate();
+  const dispatch = useDispatch();
   const isLoggedIn = useSelector((state: RootState) => state.user)
 
   const logout = () => {
-  localStorage.removeItem("token");
-  window.location.href = "/login";
-};
+    localStorage.removeItem("token");
+    dispatch(logoutAction());
+    navigator('/login');
+  };
 
   return (
     <Navbar className="bg-body-tertiary">
