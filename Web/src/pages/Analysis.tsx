@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import styled from "styled-components";
 import BAG from "/SVG/BAG.svg?url";
 import URL from "/SVG/URL.svg?url";
@@ -8,6 +7,7 @@ import type { RadarData } from "../components/SkillRadarChart";
 import SkillBarChart from "../components/SkillBarChart";
 import type { SkillData } from "../components/SkillBarChart";
 import { useLocation } from "react-router-dom";
+import { ANALYSIS_STORAGE_KEY, PROFILE_STORAGE_KEY } from "../api";
 
 // ------------------ 더미 데이터(나머지는 나중에 AI DB로 교체) ------------------
 const jobFitData: SkillData[] = [
@@ -46,7 +46,22 @@ const actionPlans = [
   },
 ];
 
-// ------------------ 타입 ------------------
+type ConsultingRole = {
+  role: string;
+  fit_score: number;
+};
+
+type MissingSkill = {
+  name: string;
+  priority?: string;
+  level?: string;
+};
+
+type ImprovementPlan = {
+  title: string;
+  description: string;
+  duration: string;
+};
 
 // ------------------ 스타일(너 기존 코드 그대로) ------------------
 let AnalysisBgDiv = styled.div`
@@ -332,7 +347,7 @@ let PlanHeader = styled.div`
 let StepBadge = styled.div`
   width: 24px;
   height: 24px;
-  background-color: #4dabf7;
+  background-color: #74CBFF;
   color: white;
   border-radius: 50%;
   display: flex;
@@ -367,33 +382,39 @@ let DurationTag = styled.span`
 // ------------------ 컴포넌트 ------------------
 function Analysis() {
   const location = useLocation();
-  const result = location.state?.result;
+  const savedAnalysisRaw = localStorage.getItem(ANALYSIS_STORAGE_KEY);
+  const savedAnalysis = savedAnalysisRaw ? JSON.parse(savedAnalysisRaw) : null;
+  const pageState = location.state ?? savedAnalysis;
+  const result = pageState?.result;
   const structure = result?.structure;
   const consulting = result?.consulting;
+  const savedProfileRaw = localStorage.getItem(PROFILE_STORAGE_KEY);
+  const savedProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : null;
 
   const profile = {
-    name: structure?.career_summary ? "분석 완료" : "홍길동",
-    career: consulting?.overall_level ?? "-",
-    portfolioUrl: "-",
-    stacks: structure?.skills ?? [],
+    name: savedProfile?.name || (structure?.career_summary ? "분석 완료" : "홍길동"),
+    career: savedProfile?.career || consulting?.overall_level || "-",
+    portfolioUrl: savedProfile?.portfolioUrl || "-",
+    stacks: structure?.skills?.length ? structure.skills : savedProfile?.stacks || [],
   };
 
   const radarData: RadarData[] = consulting?.skill_radar ?? [];
 
   const fitData: SkillData[] = (consulting?.market_fit_roles ?? jobFitData).map(
-    (r: { role: string; fit_score: number }) => ({ name: r.role, value: r.fit_score })
+    (r: ConsultingRole | SkillData) =>
+      "role" in r ? { name: r.role, value: r.fit_score } : { name: r.name, value: r.value }
   );
 
   const skills = (consulting?.missing_skills ?? missingSkills).map(
-    (s: { name: string; priority: string }, i: number) => ({
+    (s: MissingSkill | (typeof missingSkills)[number], i: number) => ({
       id: i + 1,
       name: s.name,
-      level: s.priority ?? s.level,
+      level: ("priority" in s ? s.priority : s.level) ?? "중간",
     })
   );
 
   const plans = (consulting?.improvement_actions ?? actionPlans).map(
-    (p: { title: string; description: string; duration: string }, i: number) => ({
+    (p: ImprovementPlan | (typeof actionPlans)[number], i: number) => ({
       id: i + 1,
       title: p.title,
       description: p.description,
@@ -420,7 +441,7 @@ function Analysis() {
             <AnalysisStacks>보유 기술 스킬</AnalysisStacks>
             {profile.stacks.length > 0 ? (
               <div className="mt-3">
-                {profile.stacks.map((stack) => (
+                {profile.stacks.map((stack: string) => (
                   <Badge key={stack}>{stack}</Badge>
                 ))}
               </div>
@@ -483,7 +504,7 @@ function Analysis() {
             <AnalysisTitle>부족 스킬 분석</AnalysisTitle>
 
             <MissingSkillList>
-              {skills.map((skill) => (
+              {skills.map((skill: { id: number; name: string; level: string }) => (
                 <MissingSkillItem key={skill.id}>
                   <SkillName>{skill.name}</SkillName>
                   <LevelBadge level={skill.level}>{skill.level}</LevelBadge>
@@ -500,7 +521,11 @@ function Analysis() {
             <AnalysisTitle>개선 액션 플랜</AnalysisTitle>
 
             <PlanList>
-              {plans.map((plan, index) => (
+              {plans.map(
+                (
+                  plan: { id: number; title: string; description: string; duration: string },
+                  index: number
+                ) => (
                 <PlanItem key={plan.id}>
                   <PlanHeader>
                     <StepBadge>{index + 1}</StepBadge>
@@ -509,7 +534,8 @@ function Analysis() {
                   <PlanDescription>{plan.description}</PlanDescription>
                   <DurationTag>{plan.duration}</DurationTag>
                 </PlanItem>
-              ))}
+                )
+              )}
             </PlanList>
 
             <FooterText style={{ marginTop: "1.5em" }}>

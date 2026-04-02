@@ -172,6 +172,7 @@ Rules:
   - "subject" must be a short Korean label (2–6 characters), e.g. "백엔드", "ML 모델링", "인프라", "데이터 분석".
   - "value" must be an integer between 0 and 100, scored based on portfolio evidence.
   - Choose categories that best differentiate this candidate. Do not use generic placeholders.
+- For "recommended_companies": recommend exactly 6 specific, real Korean IT companies genuinely suitable for this candidate's skill level and stack. Do NOT recommend tier-1 giants (삼성전자, 카카오, 네이버, 라인, 쿠팡, LG CNS) unless the portfolio clearly warrants it. Focus on mid-size product companies, growing B2B SaaS startups, and specialized tech firms. For each company provide detailed reasons (3+ items) covering culture, growth opportunity, and tech stack alignment.
 - Do not omit any field. Use "" for missing strings and [] for missing arrays.
 
 Return this exact JSON structure:
@@ -193,7 +194,38 @@ Return this exact JSON structure:
   "missing_skills": [{ "name": "기술명", "priority": "높음|중간|낮음" }],
   "market_fit_roles": [{ "role": "직무명", "fit_score": 0 }],
   "improvement_actions": [{ "title": "액션 제목", "description": "구체적인 설명", "duration": "예상 기간" }],
-  "project_feedback": [{ "project_name": "프로젝트명", "strength": "잘한 점", "improvement": "개선할 점" }]
+  "project_feedback": [{ "project_name": "프로젝트명", "strength": "잘한 점", "improvement": "개선할 점" }],
+  "recommended_companies": [{"name":"","tags":["산업분야","기업규모","지역"],"work_type":"재택근무|하이브리드|오피스","fit_score":0,"tech_score":0,"stacks":[],"reasons":[],"description":""}],
+  "portfolio_review": {
+    "overall_score": 0,
+    "summary": "포트폴리오 전체 인상 한 줄 요약",
+    "sections": [
+      {"section": "프로젝트 설명 구체성", "score": 0, "issues": [], "suggestions": []},
+      {"section": "기술 스택 활용도", "score": 0, "issues": [], "suggestions": []},
+      {"section": "성과/결과 수치화", "score": 0, "issues": [], "suggestions": []},
+      {"section": "차별화 요소", "score": 0, "issues": [], "suggestions": []}
+    ],
+    "quick_wins": ["즉시 개선 가능한 항목1", "즉시 개선 가능한 항목2"],
+    "project_reviews": [
+      {"project_name": "", "strength": "", "issues": [], "suggestions": []}
+    ]
+  },
+  "roadmap": {
+    "current_title": "현재 역량 수준 한 줄 요약",
+    "target_title": "6개월 후 목표 역량 한 줄 요약",
+    "phases": [
+      {
+        "phase": 1,
+        "label": "1~2개월",
+        "goal": "이 단계의 핵심 목표",
+        "skills": ["학습할 기술1", "학습할 기술2"],
+        "resources": [
+          {"type": "강의|책|문서|유튜브", "title": "구체적 강의/자료명", "platform": "플랫폼명(유데미|인프런|유튜브|책 등)"}
+        ],
+        "project": {"title": "추천 프로젝트 제목", "description": "어떤 프로젝트를 만들면 좋은지 구체적 설명"}
+      }
+    ]
+  }
 }"""
 
 
@@ -232,5 +264,4 @@ def run_pipeline(pages: List[Dict], mode: str = "full") -> Dict:
     blocks = extract_blocks(pages)
     structured = llm_structure(blocks)
     consulting = llm_consult(structured) if mode == "full" else None
-    logger.info("파이프라인 완료: mode=%s", mode)
     return {"structure": structured, "consulting": consulting}

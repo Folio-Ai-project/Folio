@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AI_API_BASE } from "../api";
+import { ANALYSIS_STORAGE_KEY, aiApiUrl } from "../api";
 
 let MainDiv = styled.div<{ pt: number }>`
   position: relative;
@@ -10,11 +10,7 @@ let MainDiv = styled.div<{ pt: number }>`
   overflow: hidden;
   padding: ${(props) => props.pt}em 2em 4em 2em;
 
-  background: radial-gradient(
-      ellipse at top center,
-      rgba(190, 235, 255, 0.6) 10%,
-      rgba(230, 247, 255, 0.45) 75%,
-      rgba(248, 252, 255, 0.95) 85%
+  background-color: #e5fbff;
     ),
     linear-gradient(180deg, #f9fcff 0%, #ffffff 100%);
 `;
@@ -98,13 +94,13 @@ let UploadButton = styled.button`
   height: 3.5em;
   border-radius: 1em;
   border: none;
-  background: #46beff;
+  background: #74CBFF;
   color: white;
   font-weight: 600;
   cursor: pointer;
 
   &:hover {
-    background: #32a8ff;
+    background: #46BEFF;
   }
 
   &:disabled {
@@ -213,7 +209,7 @@ function MainPage() {
     try {
       setIsUploading(true);
 
-      const res = await fetch(`${AI_API_BASE}/api/analyze`, {
+      const res = await fetch(aiApiUrl("/api/analyze"), {
         method: "POST",
         body: formData,
       });
@@ -232,14 +228,18 @@ function MainPage() {
       }
 
       const result = await res.json();
+      const analysisPayload = {
+        result,
+        prompt: prompt ?? "",
+        fileNames: files.map((f) => f.name),
+        createdAt: new Date().toISOString(),
+      };
+
+      localStorage.setItem(ANALYSIS_STORAGE_KEY, JSON.stringify(analysisPayload));
 
       // ✅ 결과를 Analysis로 넘김
       navigate("/Analysis", {
-        state: {
-          result,
-          prompt: prompt ?? "",
-          fileNames: files.map((f) => f.name),
-        },
+        state: analysisPayload,
       });
 
       console.log("AI 전송 완료", result);

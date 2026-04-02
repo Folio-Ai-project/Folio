@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Card, Form, Button, Badge } from "react-bootstrap";
 import { MainDiv } from "./MainPage";
+import { PROFILE_STORAGE_KEY, appApiUrl } from "../api";
 
 const STACK_POOL = [
   "JavaScript",
@@ -24,9 +25,9 @@ const PageWrapper = styled.div`
 const StackButton = styled.button<{ selected: boolean }>`
   padding: 0.6em 1em;
   border-radius: 1.2em;
-  border: 1.5px solid #46beff;
-  background: ${({ selected }) => (selected ? "#46BEFF" : "white")};
-  color: ${({ selected }) => (selected ? "white" : "#46BEFF")};
+  border: 1.5px solid #74CBFF;
+  background: ${({ selected }) => (selected ? "#74CBFF" : "white")};
+  color: ${({ selected }) => (selected ? "white" : "#74CBFF")};
   font-weight: 600;
   cursor: pointer;
   transition: 0.2s;
@@ -62,7 +63,7 @@ function MyPage() {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`http://localhost:8000/api/profile/me`, {
+        const res = await fetch(appApiUrl("/api/profile/me"), {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -82,6 +83,15 @@ function MyPage() {
         setCareer(data.career || "");
         setPortfolioUrl(data.portfolioUrl || "");
         setStacks(Array.isArray(data.stacks) ? data.stacks : []);
+        localStorage.setItem(
+          PROFILE_STORAGE_KEY,
+          JSON.stringify({
+            name: data.name || "",
+            career: data.career || "",
+            portfolioUrl: data.portfolioUrl || "",
+            stacks: Array.isArray(data.stacks) ? data.stacks : [],
+          })
+        );
       } catch (err) {
         console.error("프로필 로드 실패:", err);
         setError("서버 연결 실패");
@@ -121,7 +131,7 @@ function MyPage() {
       setSaving(true);
       setError(null);
 
-      const res = await fetch(`http://localhost:8000/api/profile/me`, {
+      const res = await fetch(appApiUrl("/api/profile/me"), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -142,6 +152,7 @@ function MyPage() {
         return;
       }
 
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(payload));
       alert("내 정보가 저장되었습니다!");
     } catch (err) {
       console.error("프로필 저장 실패:", err);
@@ -231,7 +242,7 @@ function MyPage() {
 
           <div className="d-flex justify-content-end mt-4">
             <Button
-              style={{ backgroundColor: "#46BEFF", border: "none" }}
+              style={{ backgroundColor: "#74CBFF", border: "none" }}
               onClick={handleSave}
               disabled={loading || saving}
             >

@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const mysql = require("mysql2/promise");
 const cors = require("cors");
@@ -6,8 +8,14 @@ const bcrypt = require("bcrypt");
 
 const app = express();
 
-const PORT = 5000;
-const JWT_SECRET = "career_ai_secret_2026";
+const PORT = Number(process.env.PORT || 5000);
+const JWT_SECRET = process.env.JWT_SECRET || "career_ai_secret_2026";
+const allowedOrigins = new Set([
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
+]);
 
 /* ===========================
    CORS
@@ -15,11 +23,38 @@ const JWT_SECRET = "career_ai_secret_2026";
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS 차단: ${origin}`));
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (origin && allowedOrigins.has(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Vary", "Origin");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PUT,DELETE,OPTIONS"
+    );
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 
 app.use(express.json());
 
@@ -28,10 +63,11 @@ app.use(express.json());
 =========================== */
 
 const dbConfig = {
-  host: "localhost",
-  user: "career",
-  password: "career1234",
-  database: "career_ai",
+  host: process.env.DB_HOST || "127.0.0.1",
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || "career",
+  password: process.env.DB_PASSWORD || "career1234",
+  database: process.env.DB_NAME || "career_ai",
 };
 
 let pool;
@@ -47,7 +83,9 @@ async function initDB() {
   await conn.ping();
   conn.release();
 
-  console.log("DB 연결 성공");
+  console.log(
+    `DB 연결 성공 (${dbConfig.user}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database})`
+  );
 }
 
 /* ===========================
@@ -244,4 +282,8 @@ initDB()
   })
   .catch((err) => {
     console.error("DB 초기화 실패:", err);
+    console.error(
+      "현재 DB 설정:",
+      `${dbConfig.user}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`
+    );
   });

@@ -12,7 +12,7 @@ type NavbarGridProps = {
 
 let GridBox = styled.div`
   display: grid;
-  grid-template-columns: 1fr 0.2fr 0.2fr 0.2fr 1fr;
+  grid-template-columns: 1fr 0.2fr 0.2fr 0.2fr 0.2fr 1fr;
   width: 100%;
   height: 100%;
 `
@@ -20,7 +20,8 @@ let NavbarGrid = styled.div<NavbarGridProps>`
   display: flex;
   justify-content: ${ props => props.jc || 'center' };
   align-items: center;
-  height: 2.5em;
+  height: 3.2em;
+  width: 100%;
 `
 
 function NavbarContent(){
@@ -61,6 +62,14 @@ function NavbarContent(){
             else{alert('로그인이 필요한 서비스입니다.'),
               navigator('/login')}
             }} className='NavbarContentText'>성장 로드맵</a>
+        </NavbarGrid>
+        <NavbarGrid style={{ marginLeft: "2em" }}>
+          <a onClick={()=>{
+            if(isLoggedIn==true){
+              navigator('/Review')}
+            else{alert('로그인이 필요한 서비스입니다.'),
+              navigator('/login')}
+            }} className='NavbarContentText'>포트폴리오 개선</a>
         </NavbarGrid>
         <NavbarGrid jc ="flex-end">
           {

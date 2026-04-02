@@ -2,6 +2,7 @@ import { useState } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import { MainDiv } from "./MainPage";
+import { appApiUrl } from "../api";
 
 // ---- styles (기존 그대로) ----
 let SingupDiv = styled.div`
@@ -115,7 +116,7 @@ export function SignupPage() {
     try {
       setLoading(true);
 
-      const res = await fetch(`http://localhost:8000/api/auth/signup`, {
+      const res = await fetch(appApiUrl("/api/auth/signup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

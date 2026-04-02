@@ -9,6 +9,7 @@ import {MyPage} from './pages/Mypage'
 import Analysis from './pages/Analysis'
 import Recommend from './pages/Recommend'
 import Roadmap from './pages/Roadmap'
+import PortfolioReview from './pages/PortfolioReview'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path='/Analysis' element={<Analysis />} />
         <Route path='/Recommend' element={<Recommend />} />
         <Route path='/Roadmap' element={<Roadmap />} />
+        <Route path='/Review' element={<PortfolioReview />} />
         <Route path='/login' element={<LoginPage />} />
         <Route path='/signup' element={<SignupPage />} />
         <Route path='/mypage' element={<MyPage />} />

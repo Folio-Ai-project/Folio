@@ -31,9 +31,12 @@ interface SkillBarChartProps {
   나중에 기준 바꾸고 싶으면 여기 수정
 */
 const getBarColor = (value: number) => {
-  if (value >= 80) return "#2EA8FF";   // 높은 점수 (파랑)
-  if (value >= 60) return "#8A94A6";   // 중간 점수 (회색)
-  return "#C0C4CC";                    // 낮은 점수 (연회색)
+  if (value >= 90) return "#0A6EFF";  // 진한 파랑
+  if (value >= 75) return "#2EA8FF";  // 파랑
+  if (value >= 60) return "#54C0F5";  // 하늘
+  if (value >= 45) return "#85D4F0";  // 연하늘
+  if (value >= 30) return "#AAD8E8";  // 아주 연한 하늘
+  return "#C8E8F5";                   // 거의 흰 하늘
 };
 
 /*
