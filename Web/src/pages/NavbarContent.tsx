@@ -40,7 +40,7 @@ function NavbarContent(){
     <Navbar className="bg-body-tertiary">
       <GridBox>
         <NavbarGrid jc="flex-start">
-          <Link className='NavbarContentLogo' to={"/"}>Polio</Link>
+          <Link className='NavbarContentLogo' to={"/"}>Folio</Link>
         </NavbarGrid>
         <NavbarGrid >
           <a onClick={()=>{
