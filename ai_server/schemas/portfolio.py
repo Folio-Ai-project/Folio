@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class Project(BaseModel):
@@ -14,3 +15,25 @@ class Project(BaseModel):
 
 class PortfolioResponse(BaseModel):
     projects: List[Project]
+
+
+class StructuredProject(BaseModel):
+    name: Optional[str]
+    description: Optional[str]
+    role: Optional[str]
+    technologies: List[str]
+    period: Optional[str]
+    achievements: List[str]
+
+
+class Education(BaseModel):
+    school: Optional[str]
+    major: Optional[str]
+    period: Optional[str]
+
+
+class PortfolioStructure(BaseModel):
+    projects: List[StructuredProject]
+    skills: List[str]
+    education: List[Education]
+    career_summary: str
